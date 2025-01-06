@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { initializeApp } from 'firebase/app'
-import { getDatabase, ref, push, onValue } from 'firebase/database'
+import { getDatabase, ref, onValue, update } from 'firebase/database'
 
 // Firebase configuration
 const firebaseConfig = {
@@ -21,23 +21,25 @@ const database = getDatabase(app)
 
 export default function Home() {
   const [formData, setFormData] = useState({
-    apiCall: '',
+    macAddress: '',
+    api_call: '',
     path: '',
     phoneNumber: '',
-    message: ''
+    messege: ''
   })
   const [results, setResults] = useState<any[]>([])
+  const [devices, setDevices] = useState<String[]>([])
 
-  useEffect(() => {
-    const dataRef = ref(database, 'messages')
+  const loadDevices = ()=>{
+    const dataRef = ref(database)
     onValue(dataRef, (snapshot) => {
-      const data = snapshot.val()
-      if (data) {
-        const dataArray = Object.entries(data).map(([key, value]) => ({ id: key, ...value }))
-        setResults(dataArray)
+      const mac = snapshot.val()
+      if (mac) {
+        const keys = Object.keys(mac) // Extract keys (IDs) from the object
+        setDevices((prevDevices) => [...prevDevices, ...keys])
       }
     })
-  }, [])
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -46,9 +48,16 @@ export default function Home() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const dataRef = ref(database, 'messages')
-    await push(dataRef, formData)
-    setFormData({ apiCall: '', path: '', phoneNumber: '', message: '' })
+    const dataRef = ref(database, formData.macAddress)
+    await update(dataRef, formData)
+    setFormData({macAddress:formData.macAddress, api_call: '', path: '', phoneNumber: '', messege: '' })
+    onValue(dataRef, (snapshot) => {
+      const mac = snapshot.val()
+      if (mac) {
+        const values = Object.values(mac) // Extract values from the object
+        setResults((values as Array<{ [key: string]: string }>))
+      }
+    })
   }
 
   return (
@@ -57,16 +66,30 @@ export default function Home() {
         <h1 className="text-3xl font-bold text-center text-gray-900 mb-8">Firebase Realtime Database App</h1>
         
         <form onSubmit={handleSubmit} className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+        <div className="mb-4">
+            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="macAddress">
+              MAC address
+            </label>
+            <input
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              id="macAddress"
+              type="text"
+              name="macAddress"
+              value={formData.macAddress}
+              onChange={handleInputChange}
+              placeholder="Enter MAC Address"
+            />
+          </div>
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="apiCall">
+            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="api_call">
               API Call
             </label>
             <input
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              id="apiCall"
+              id="api_call"
               type="text"
-              name="apiCall"
-              value={formData.apiCall}
+              name="api_call"
+              value={formData.api_call}
               onChange={handleInputChange}
               placeholder="Enter API call"
             />
@@ -107,7 +130,7 @@ export default function Home() {
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
               id="message"
               name="message"
-              value={formData.message}
+              value={formData.messege}
               onChange={handleInputChange}
               placeholder="Enter message"
               rows={4}
@@ -122,24 +145,34 @@ export default function Home() {
             </button>
           </div>
         </form>
-        
         <div className="bg-white shadow-md rounded px-8 pt-6 pb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Results from Database</h2>
-          {results.length > 0 ? (
-            <ul className="divide-y divide-gray-200">
-              {results.map((item) => (
-                <li key={item.id} className="py-4">
-                  <p className="text-sm font-medium text-gray-900">API Call: {item.apiCall}</p>
-                  <p className="text-sm text-gray-500">Path: {item.path}</p>
-                  <p className="text-sm text-gray-500">Phone Number: {item.phoneNumber}</p>
-                  <p className="text-sm text-gray-500">Message: {item.message}</p>
-                </li>
-              ))}
-            </ul>
+          { 
+            <ul className="divide-y divide-gray-200" style={{ color: 'black' }}>
+            {results.map((res, index) => (
+              <li key={index}>{res}</li>
+            ))}
+          </ul>
+          }
+        </div>
+        <div className="bg-white shadow-md rounded px-8 pt-6 pb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Devices from Database</h2>
+          <button
+              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            onClick={loadDevices}>
+              Load Devices
+            </button>
+          {devices.length > 0 ? (
+            <ul className="divide-y divide-gray-200" style={{ color: 'black' }}>
+            {devices.map((device, index) => (
+              <li key={index}>{device}</li>
+            ))}
+          </ul>
           ) : (
-            <p className="text-gray-500">No data available</p>
+            <p className="text-gray-500">No Devices available</p>
           )}
         </div>
+
       </div>
     </div>
   )

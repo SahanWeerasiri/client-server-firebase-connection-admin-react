@@ -54,6 +54,22 @@ The main components of the application are:
 3. Copy your Firebase configuration to the environment variables
 4. Set up the database rules according to your security requirements
 
+## Realtime Database Structure
+```bash
+Root
+├── MAC address 1
+│   ├── api_call
+│   ├── path
+|   ├── phoneNumber
+|   ├── result
+│   └── messege
+├── MAC address 2
+│   ├── api_call
+│   ├── path
+|   ├── phoneNumber
+|   ├── result
+│   └── messege
+```
 
 ## Learn More
 

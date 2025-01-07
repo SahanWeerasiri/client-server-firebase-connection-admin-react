@@ -55,20 +55,20 @@ The main components of the application are:
 4. Set up the database rules according to your security requirements
 
 ## Realtime Database Structure
-```bash
-Root
-├── MAC address 1
-│   ├── api_call
-│   ├── path
-|   ├── phoneNumber
-|   ├── result
-│   └── messege
-├── MAC address 2
-│   ├── api_call
-│   ├── path
-|   ├── phoneNumber
-|   ├── result
-│   └── messege
+```json
+{
+  "root": {
+    "<Phone MAC address>": {
+      "available": true,
+      "api_call": "<API call updated dynamically>",
+      "path": "<Body of the API call>",
+      "result": "<Result after processing the API call>",
+      "phoneNumber": "<specific phone number>",
+      "messege": "<msg>",
+      "macAddress": "<Mac address>"
+    }
+  }
+}
 ```
 
 ## Learn More
